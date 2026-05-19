@@ -3,65 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MWAMINI Dashboard</title>
-
+    <title>Dashboard | Secure Chat</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body class="dash-body">
 
-<nav class="top-nav">
-
-    <div class="nav-brand">
-        <div class="mini-logo small">M</div>
-
-        <div>
-            <strong>MWAMINI</strong>
-            <span>CHATTING SITE</span>
-        </div>
+<nav class="topbar">
+    <div class="logo">MWAMINI CHAT <span class="badge">E2EE ACTIVE</span></div>
+    <div class="user-profile">
+        <span id="userDisplay"></span>
+        <button id="logoutBtn">Logout</button>
     </div>
-
-    <div class="nav-profile">
-        <span id="userNameDisplay">Loading...</span>
-
-        <button id="logoutBtn" class="btn-logout">
-            Logout
-        </button>
-    </div>
-
 </nav>
 
-<div class="workspace">
-
-    <aside class="col-left">
-
-        <h3>Groups</h3>
-
-        <div class="group-item active">
-            👥 General Room
-        </div>
-
-        <div class="group-item">
-            🔒 Secure Room
-        </div>
-
-        <div class="group-item">
-            ⚡ Developers
-        </div>
-
+<div class="layout">
+    <aside class="left">
+        <h3>Secure Rooms</h3>
+        <div id="groupList"></div>
     </aside>
 
-    <main class="col-main">
+    <main class="center">
+        <div class="chat-header">
+            <h2 id="currentGroupTitle"># general</h2>
+        </div>
+        
+        <div id="chatBox"></div>
 
-        <header class="chat-header">
-            <h2>Realtime Encrypted Chat</h2>
-        </header>
+        <form id="msgForm">
+            <input id="msgInput" placeholder="Write an encrypted message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+        </form>
+    </main>
 
-        <div id="messageFeed" class="chat-feed"></div>
+    <aside class="right">
+        <h3>Security Status</h3>
+        <div class="security-card">
+            <p><strong>Encryption:</strong> Client-Side Base64 E2EE</p>
+            <p><strong>AI Gateway:</strong> Moderation Interceptor Active</p>
+            <p><strong>Node Presence:</strong> Synced</p>
+        </div>
+    </aside>
+</div>
 
-        <form id="chatInputForm" class="chat-input">
+<script type="module">
+    import { Auth } from './js/auth.js';
+    import { App } from './js/app.js';
 
-            <input
-                type="text"
-                id="messageInput"
-                placeholder="Type secure message..."
+    Auth.onAuth(user => {
+        if (!user) {
+            location.href = "index.html";
+        } else {
+            document.getElementById("userDisplay").innerText = user.email;
+            App.init();
+        }
+    });
+
+    document.getElementById("logoutBtn").onclick = () => Auth.logout();
+
+    document.getElementById("msgForm").onsubmit = e => {
+        e.preventDefault();
+        const input = document.getElementById("msgInput");
+        if (input.value.trim() !== "") {
+            App.send(input.value);
+            input.value = "";
+        }
+    };
+</script>
+
+</body>
 </html>
