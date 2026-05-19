@@ -1,76 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MWAMINI CHATTING SITE</title>
+<script type="module">
 
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="cover-body">
+import { AuthEngine } from './js/auth.js';
 
-<div class="auth-wrapper">
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
 
-    <div class="auth-branding">
+document.getElementById('toSignup').onclick = () => {
 
-        <div class="logo-box">M</div>
+    loginForm.classList.add('hidden');
 
-        <h1>
-            HIGH PRIVACY,<br>
-            YOUR DATA ENCRYPTED
-        </h1>
+    signupForm.classList.remove('hidden');
 
-        <p class="subtitle">
-            Secure realtime communication system.
-        </p>
+};
 
-        <p class="description">
-            MWAMINI CHATTING SITE provides encrypted communication,
-            modern messaging infrastructure and realtime Firebase synchronization.
-        </p>
+document.getElementById('toLogin').onclick = () => {
 
-    </div>
+    signupForm.classList.add('hidden');
 
-    <div class="auth-panel">
+    loginForm.classList.remove('hidden');
 
-        <div class="panel-header">
-            <div class="mini-logo">M</div>
-            <h2>
-                MWAMINI<br>
-                <span>CHATTING SITE</span>
-            </h2>
-        </div>
+};
 
-        <form id="loginForm" class="form-content">
+loginForm.addEventListener('submit', async (e) => {
 
-            <label>Email Address</label>
-            <input type="email" id="loginEmail" placeholder="Enter Email" required>
+    e.preventDefault();
 
-            <label>Password</label>
-            <input type="password" id="loginPassword" placeholder="Enter Password" required>
+    const email =
+        document.getElementById('loginEmail').value;
 
-            <button type="submit" class="btn-primary">
-                Sign In
-            </button>
+    const password =
+        document.getElementById('loginPassword').value;
 
-            <p class="toggle-text">
-                New User?
-                <span id="toSignup">Create Account</span>
-            </p>
+    await AuthEngine.login(email, password);
 
-        </form>
+});
 
-        <form id="signupForm" class="form-content hidden">
+signupForm.addEventListener('submit', async (e) => {
 
-            <label>Username</label>
-            <input type="text" id="signupName" placeholder="Username" required>
+    e.preventDefault();
 
-            <label>Email Address</label>
-            <input type="email" id="signupEmail" placeholder="Email" required>
+    const username =
+        document.getElementById('signupName').value;
 
-            <label>Password</label>
-            <input type="password" id="signupPassword" placeholder="Password" required>
+    const email =
+        document.getElementById('signupEmail').value;
 
-            <button type="submit" class="btn-primary">
-</html>
+    const password =
+        document.getElementById('signupPassword').value;
+
+    await AuthEngine.register(
+        email,
+        password,
+        username
+    );
+
+});
+
+</script>
