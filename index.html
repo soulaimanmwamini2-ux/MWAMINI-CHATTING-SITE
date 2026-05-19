@@ -22,17 +22,14 @@
             <button id="showSignup">Signup</button>
         </div>
 
-        <!-- Status/Notification Messages -->
         <div id="authAlert" class="auth-alert hidden"></div>
 
-        <!-- LOGIN FORM -->
         <form id="loginForm">
             <input type="email" id="loginEmail" placeholder="Email Address" required>
             <input type="password" id="loginPassword" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
 
-        <!-- SIGNUP FORM -->
         <form id="signupForm" class="hidden">
             <input type="text" id="signupName" placeholder="Username" required>
             <input type="email" id="signupEmail" placeholder="Email Address" required>
@@ -46,6 +43,7 @@
 </div>
 
 <script type="module">
+    console.log("System Initializing: index.html loaded");
     import { Auth } from './js/auth.js';
 
     const loginForm = document.getElementById("loginForm");
@@ -55,7 +53,6 @@
     const guestBtn = document.getElementById("guestBtn");
     const authAlert = document.getElementById("authAlert");
 
-    // UI Tab Switching Logic
     showLogin.onclick = () => {
         loginForm.classList.remove("hidden");
         signupForm.classList.add("hidden");
@@ -70,7 +67,6 @@
         showLogin.classList.remove("active");
     };
 
-    // Form Handling
     loginForm.onsubmit = async (e) => {
         e.preventDefault();
         try {
@@ -108,7 +104,6 @@
         authAlert.className = `auth-alert ${type}`;
     }
 
-    // Monitor auth state changes to protect paths
     Auth.onAuth((user) => {
         if (user) {
             if (user.isAnonymous || user.emailVerified) {
@@ -119,6 +114,5 @@
         }
     });
 </script>
-
 </body>
 </html>
