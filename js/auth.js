@@ -1,5 +1,4 @@
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
 import {
     getAuth,
@@ -8,8 +7,12 @@ import {
     updateProfile,
     onAuthStateChanged,
     signOut
-}
-from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+/* =========================================
+   FIREBASE CONFIG
+   REPLACE WITH YOUR REAL FIREBASE KEYS
+========================================= */
 
 const firebaseConfig = {
   apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
@@ -22,11 +25,21 @@ const firebaseConfig = {
   measurementId: "G-FKFP0J8J94"
 };
 
+/* =========================================
+   INITIALIZE FIREBASE
+========================================= */
+
 const app = initializeApp(firebaseConfig);
 
 const auth = getAuth(app);
 
+/* =========================================
+   AUTH ENGINE
+========================================= */
+
 export const AuthEngine = {
+
+    /* REGISTER */
 
     async register(email, password, username) {
 
@@ -49,11 +62,15 @@ export const AuthEngine = {
 
         } catch (error) {
 
+            console.error(error);
+
             alert(error.message);
 
         }
 
     },
+
+    /* LOGIN */
 
     async login(email, password) {
 
@@ -71,23 +88,41 @@ export const AuthEngine = {
 
         } catch (error) {
 
+            console.error(error);
+
             alert(error.message);
 
         }
 
     },
 
+    /* MONITOR AUTH STATE */
+
     monitorState(callback) {
 
-        onAuthStateChanged(auth, callback);
+        onAuthStateChanged(auth, (user) => {
+
+            callback(user);
+
+        });
 
     },
 
+    /* LOGOUT */
+
     async logout() {
 
-        await signOut(auth);
+        try {
 
-        window.location.href = "index.html";
+            await signOut(auth);
+
+            window.location.href = "index.html";
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
 
     }
 
