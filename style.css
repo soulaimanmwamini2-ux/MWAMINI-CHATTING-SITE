@@ -16,9 +16,10 @@ body {
     overflow-x: hidden;
 }
 
+/* FIX: Forces total element removal across layout contexts */
 .hidden { display: none !important; }
 
-/* AUTH PRE-LOG ARCHITECTURE */
+/* AUTHENTICATION PORTAL INTERFACE */
 .cover-body {
     background: radial-gradient(circle at center, #1c1335 0%, var(--bg-main) 100%);
     display: flex;
@@ -83,7 +84,7 @@ form button {
 }
 form button:hover { opacity: 0.9; }
 
-/* APPLICATION LAYOUT DASHBOARD */
+/* RE-ENGINEERED CONTAINER GRID ENGINE */
 .dash-body { display: flex; flex-direction: column; height: 100vh; }
 
 .topbar { 
