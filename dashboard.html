@@ -9,11 +9,10 @@
 </head>
 <body class="dash-body">
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2 id="current-user-name">Loading...</h2>
-                <button id="logout-btn">Logout</button>
+                <button id="logout-btn" class="danger-btn small-btn">Logout</button>
             </div>
             
             <div class="sidebar-tabs">
@@ -44,12 +43,11 @@
             </div>
         </aside>
 
-        <!-- Main Chat Area -->
         <main class="chat-area">
             <div id="chat-header" class="chat-header">
                 <h3 id="active-chat-name">Select a chat</h3>
                 <div id="group-actions" class="hidden">
-                    <button id="btn-manage-group" class="small-btn">Manage</button>
+                    <button id="btn-manage-group" class="small-btn">Manage Group</button>
                 </div>
             </div>
             
@@ -69,7 +67,7 @@
             <h3>Create Group</h3>
             <input type="text" id="new-group-name" placeholder="Group Name">
             <div class="modal-actions">
-                <button id="btn-cancel-group">Cancel</button>
+                <button id="btn-cancel-group" class="secondary-btn">Cancel</button>
                 <button id="btn-confirm-group">Create</button>
             </div>
         </div>
@@ -79,9 +77,11 @@
         <div class="modal-content">
             <h3 id="manage-group-title">Manage Group</h3>
             <div class="manage-section">
-                <h4>Add Member (Email)</h4>
-                <input type="email" id="add-member-email" placeholder="User Email">
-                <button id="btn-add-member" class="small-btn">Add</button>
+                <h4>Add Member (by Email)</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="email" id="add-member-email" placeholder="User Email">
+                    <button id="btn-add-member" class="small-btn">Add</button>
+                </div>
             </div>
             <div class="manage-section">
                 <h4>Members</h4>
@@ -89,7 +89,7 @@
             </div>
             <div class="modal-actions space-between">
                 <button id="btn-delete-group" class="danger-btn">Delete Group</button>
-                <button id="btn-close-manage">Close</button>
+                <button id="btn-close-manage" class="secondary-btn">Close</button>
             </div>
         </div>
     </div>
@@ -99,7 +99,7 @@
             <h3>Post Status</h3>
             <textarea id="new-status-text" placeholder="What's on your mind? (Text or link)"></textarea>
             <div class="modal-actions">
-                <button id="btn-cancel-status">Cancel</button>
+                <button id="btn-cancel-status" class="secondary-btn">Cancel</button>
                 <button id="btn-confirm-status">Post</button>
             </div>
         </div>
