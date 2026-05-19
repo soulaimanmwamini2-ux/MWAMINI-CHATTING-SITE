@@ -1,4 +1,4 @@
-import { db } from "./config.js";
+import { db } from "./auth.js"; // FIXED IMPORT
 import {
     collection,
     addDoc,
@@ -11,13 +11,12 @@ import {
     deleteDoc,
     updateDoc,
     arrayUnion,
-    getDocs,
-    limit
+    getDocs
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 export const App = {
     activeChatId: null,
-    activeChatType: null, // 'group' or 'direct'
+    activeChatType: null, 
     activeGroupOwner: null,
     unsubscribeMessages: null,
 
@@ -26,7 +25,6 @@ export const App = {
         this.loadStatuses(user);
     },
 
-    // 1. DYNAMIC CHATS & GROUPS RESOLUTIONS
     loadRoomsAndGroups(user) {
         const userIdentifier = user.isAnonymous ? "Guest" : user.email;
         const q = query(collection(db, "chats"), where("members", "arrayContains", userIdentifier));
@@ -51,7 +49,6 @@ export const App = {
         if (currentUser.isAnonymous) return alert("Guest users cannot start private chats.");
         if (targetEmail === currentUser.email) return alert("You cannot chat with yourself.");
 
-        // Check if communication channel already exists
         const q = query(
             collection(db, "chats"), 
             where("type", "==", "direct"), 
@@ -69,7 +66,6 @@ export const App = {
             return;
         }
 
-        // Initialize completely secure separation container
         await addDoc(collection(db, "chats"), {
             name: `${currentUser.email}-${targetEmail}`,
             type: "direct",
@@ -95,7 +91,6 @@ export const App = {
         const titleText = roomData.type === "group" ? `Group: ${roomData.name}` : `Chat with: ${roomData.name.replace(userIdentifier, "").replace("-", "")}`;
         document.getElementById("currentChatTitle").innerText = titleText;
 
-        // Display/Hide Admin Operations Interface Panel
         const managementUI = document.getElementById("groupManageControls");
         if (roomData.type === "group" && roomData.createdBy === userIdentifier) {
             managementUI.classList.remove("hidden");
@@ -106,7 +101,6 @@ export const App = {
         this.listenForLiveMessages();
     },
 
-    // 2. REAL-TIME DATA STREAM ENGINE
     listenForLiveMessages() {
         if (this.unsubscribeMessages) this.unsubscribeMessages();
 
@@ -161,18 +155,17 @@ export const App = {
         if (this.unsubscribeMessages) this.unsubscribeMessages();
     },
 
-    // 3. 72-HOUR DISAPPEARING STATUS MANAGEMENT ENGINE
     async postStatus(statusText, currentUser) {
         await addDoc(collection(db, "statuses"), {
             text: statusText,
             ownerEmail: currentUser.email,
             ownerName: currentUser.displayName || currentUser.email,
-            createdAt: Date.now() // Absolute milliseconds timestamp for clean 72h comparisons
+            createdAt: Date.now() 
         });
     },
 
     loadStatuses(currentUser) {
-        const thresholdTime = Date.now() - (72 * 60 * 60 * 1000); // 72 hours ago in ms
+        const thresholdTime = Date.now() - (72 * 60 * 60 * 1000); 
         const q = query(collection(db, "statuses"), where("createdAt", ">=", thresholdTime));
 
         onSnapshot(q, (snap) => {
@@ -199,7 +192,6 @@ export const App = {
                 container.appendChild(div);
             });
 
-            // Bind Delete Events
             document.querySelectorAll(".delete-status-btn").forEach(btn => {
                 btn.onclick = async (e) => {
                     const statusId = e.target.getAttribute("data-id");
