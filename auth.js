@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 // ==========================================
-// PASTE YOUR FIREBASE CONFIGURATION HERE:
+// 🚨 PASTE YOUR REAL FIREBASE KEYS HERE 🚨
 // ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
@@ -25,15 +25,11 @@ const firebaseConfig = {
   measurementId: "G-FKFP0J8J94"
 };
 
-// Initialize Firebase Core Engine
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// ==========================================
-// AUTHENTICATION METHODS
-// ==========================================
 export const Auth = {
     async login(email, pass) {
         const userCredential = await signInWithEmailAndPassword(auth, email, pass);
@@ -49,7 +45,7 @@ export const Auth = {
         const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
         await updateProfile(userCredential.user, { displayName: name });
         await sendEmailVerification(userCredential.user);
-        await signOut(auth); // Sign out immediately until they verify their email
+        await signOut(auth); 
         return true;
     },
 
