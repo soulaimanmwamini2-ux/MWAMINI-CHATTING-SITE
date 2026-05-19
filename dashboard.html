@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MWAMINI Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="dash-body">
+
+<nav class="top-nav">
+
+    <div class="nav-brand">
+        <div class="mini-logo">M</div>
+        <div>
+            <strong>MWAMINI</strong>
+            <span>CHATTING SITE</span>
+        </div>
+    </div>
+
+    <div class="nav-profile">
+        <span id="userNameDisplay">User</span>
+        <button id="logoutBtn" class="btn-logout">
+            Logout
+        </button>
+    </div>
+
+</nav>
+
+<div class="workspace">
+
+    <aside class="col-left">
+
+        <h3>Groups</h3>
+
+        <div class="group-item active">
+            👥 General Chat
+        </div>
+
+        <div class="group-item">
+            🔒 Private Room
+        </div>
+
+    </aside>
+
+    <main class="col-main">
+
+        <div id="messageFeed" class="chat-feed"></div>
+
+        <form id="chatInputForm" class="chat-input">
+
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="Type message..."
+                required
+            >
+
+            <button type="submit" class="btn-send">
+                Send
+            </button>
+
+        </form>
+
+    </main>
+
+    <aside class="col-right">
+
+        <div class="feature-box">
+            🔐 Encrypted Communication
+        </div>
+
+        <div class="feature-box">
+            ⚡ Firebase Realtime Sync
+        </div>
+
+        <div class="feature-box">
+            🛡️ Secure Authentication
+        </div>
+
+    </aside>
+
+</div>
+
+<script type="module">
+
+import { AuthEngine } from './js/auth.js';
+import { AppEngine } from './js/app.js';
+
+AuthEngine.monitorState((user) => {
+
+    if (!user) {
+        window.location.href = "index.html";
+    } else {
+        userNameDisplay.textContent = user.displayName || "User";
+        AppEngine.streamMessages();
+    }
+
+});
+
+logoutBtn.onclick = () => AuthEngine.logout();
+
+chatInputForm.onsubmit = async (e) => {
+
+    e.preventDefault();
+
+    await AppEngine.sendMessage(messageInput.value);
+
+    messageInput.value = "";
+
+};
+
+</script>
+
+</body>
+</html>
