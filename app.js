@@ -1,203 +1,332 @@
-import { db } from "./auth.js"; // FIXED IMPORT
-import {
-    collection,
-    addDoc,
-    onSnapshot,
-    orderBy,
-    query,
-    where,
-    serverTimestamp,
-    doc,
-    deleteDoc,
-    updateDoc,
-    arrayUnion,
-    getDocs
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+/* app.js */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
+import { getFirestore, collection, addDoc, query, where, onSnapshot, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-export const App = {
-    activeChatId: null,
-    activeChatType: null, 
-    activeGroupOwner: null,
-    unsubscribeMessages: null,
+// ====== FIREBASE CONFIGURATION ======
+const firebaseConfig = {
+  apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
+  authDomain: "mwamini-chatting-site-38894.firebaseapp.com",
+  databaseURL: "https://mwamini-chatting-site-38894-default-rtdb.firebaseio.com",
+  projectId: "mwamini-chatting-site-38894",
+  storageBucket: "mwamini-chatting-site-38894.firebasestorage.app",
+  messagingSenderId: "522276815664",
+  appId: "1:522276815664:web:debb043876b07cca913ef5",
+  measurementId: "G-FKFP0J8J94"
+};
 
-    init(user) {
-        this.loadRoomsAndGroups(user);
-        this.loadStatuses(user);
-    },
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    loadRoomsAndGroups(user) {
-        const userIdentifier = user.isAnonymous ? "Guest" : user.email;
-        const q = query(collection(db, "chats"), where("members", "arrayContains", userIdentifier));
+let currentUser = null;
+let isGuest = false;
+let activeChatType = null; // 'private' or 'group'
+let activeChatId = null;
+let activeChatName = null;
+let unsubscribeMessages = null;
 
-        onSnapshot(q, (snap) => {
-            const listContainer = document.getElementById("groupList");
-            listContainer.innerHTML = "";
+// ====== UI ELEMENTS ======
+const logoutBtn = document.getElementById('logout-btn');
+const currentUserNameLabel = document.getElementById('current-user-name');
+const msgInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const messagesContainer = document.getElementById('messages-container');
+const activeChatNameLabel = document.getElementById('active-chat-name');
+const inputArea = document.getElementById('chat-input-area');
+const guestWarning = document.getElementById('guest-warning');
+const groupActions = document.getElementById('group-actions');
 
-            snap.forEach((docSnap) => {
-                const room = docSnap.data();
-                const div = document.createElement("div");
-                div.className = "chat-item-row";
-                div.innerText = room.type === "group" ? `👥 ${room.name}` : `🔒 ${room.name.replace(userIdentifier, "").replace("-", "")}`;
-                
-                div.onclick = () => this.switchChat(docSnap.id, room, userIdentifier);
-                listContainer.appendChild(div);
-            });
-        });
-    },
+const tabs = {
+    chats: document.getElementById('tab-chats'),
+    groups: document.getElementById('tab-groups'),
+    status: document.getElementById('tab-status')
+};
+const panels = {
+    chats: document.getElementById('panel-chats'),
+    groups: document.getElementById('panel-groups'),
+    status: document.getElementById('panel-status')
+};
 
-    async startPrivateChat(targetEmail, currentUser) {
-        if (currentUser.isAnonymous) return alert("Guest users cannot start private chats.");
-        if (targetEmail === currentUser.email) return alert("You cannot chat with yourself.");
-
-        const q = query(
-            collection(db, "chats"), 
-            where("type", "==", "direct"), 
-            where("members", "arrayContains", currentUser.email)
-        );
-        
-        const snap = await getDocs(q);
-        let existingChat = null;
-        snap.forEach(d => {
-            if(d.data().members.includes(targetEmail)) existingChat = d.id;
-        });
-
-        if (existingChat) {
-            this.switchChat(existingChat, { type: "direct", name: `${currentUser.email}-${targetEmail}` }, currentUser.email);
-            return;
+// ====== INIT & AUTH GUARD ======
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    currentUser = user;
+    isGuest = sessionStorage.getItem('guestMode') === 'true' || user.isAnonymous;
+    
+    if (isGuest) {
+        currentUserNameLabel.textContent = "Guest User";
+        guestWarning.classList.remove('hidden');
+    } else {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+            currentUserNameLabel.textContent = userDoc.data().name;
         }
+    }
+    
+    setupUI();
+    loadUsers();
+    loadGroups();
+    loadStatuses();
+});
 
-        await addDoc(collection(db, "chats"), {
-            name: `${currentUser.email}-${targetEmail}`,
-            type: "direct",
-            members: [currentUser.email, targetEmail],
-            createdBy: currentUser.email
+logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem('guestMode');
+    signOut(auth);
+});
+
+// ====== TAB NAVIGATION ======
+Object.keys(tabs).forEach(key => {
+    tabs[key].addEventListener('click', () => {
+        Object.keys(tabs).forEach(k => tabs[k].classList.remove('active'));
+        Object.keys(panels).forEach(k => panels[k].classList.add('hidden'));
+        tabs[key].classList.add('active');
+        panels[key].classList.remove('hidden');
+    });
+});
+
+// ====== LOAD USERS (Contacts) ======
+function loadUsers() {
+    const q = query(collection(db, "users"));
+    onSnapshot(q, (snapshot) => {
+        const list = document.getElementById('contacts-list');
+        list.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const user = docSnap.data();
+            if (user.uid !== currentUser.uid) {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.textContent = user.name;
+                div.onclick = () => openChat('private', user.uid, user.name);
+                list.appendChild(div);
+            }
         });
-    },
+    });
+}
 
-    async createGroup(groupName, currentUser) {
-        await addDoc(collection(db, "chats"), {
-            name: groupName,
-            type: "group",
-            members: [currentUser.email],
-            createdBy: currentUser.email
+// ====== LOAD GROUPS ======
+function loadGroups() {
+    const q = query(collection(db, "groups"), where("members", "array-contains", currentUser.uid));
+    onSnapshot(q, (snapshot) => {
+        const list = document.getElementById('groups-list');
+        list.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const group = docSnap.data();
+            const div = document.createElement('div');
+            div.className = 'list-item';
+            div.textContent = group.name;
+            div.onclick = () => openChat('group', docSnap.id, group.name, group.creator);
+            list.appendChild(div);
         });
-    },
+    });
+}
 
-    switchChat(chatId, roomData, userIdentifier) {
-        this.activeChatId = chatId;
-        this.activeChatType = roomData.type;
-        this.activeGroupOwner = roomData.createdBy;
-
-        const titleText = roomData.type === "group" ? `Group: ${roomData.name}` : `Chat with: ${roomData.name.replace(userIdentifier, "").replace("-", "")}`;
-        document.getElementById("currentChatTitle").innerText = titleText;
-
-        const managementUI = document.getElementById("groupManageControls");
-        if (roomData.type === "group" && roomData.createdBy === userIdentifier) {
-            managementUI.classList.remove("hidden");
-        } else {
-            managementUI.classList.add("hidden");
-        }
-
-        this.listenForLiveMessages();
-    },
-
-    listenForLiveMessages() {
-        if (this.unsubscribeMessages) this.unsubscribeMessages();
-
-        const q = query(
-            collection(db, "messages"),
-            where("chatId", "==", this.activeChatId),
-            orderBy("time", "asc")
-        );
-
-        this.unsubscribeMessages = onSnapshot(q, (snap) => {
-            const box = document.getElementById("chatBox");
-            box.innerHTML = "";
-
-            snap.forEach((docSnap) => {
-                const msg = docSnap.data();
-                const div = document.createElement("div");
-                div.className = "message-bubble";
-                div.innerHTML = `<b>${msg.senderName}</b><span class="timestamp">${msg.time ? new Date(msg.time.seconds*1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span><br><p>${msg.text}</p>`;
-                box.appendChild(div);
-            });
-            box.scrollTop = box.scrollHeight;
-        });
-    },
-
-    async sendMessage(messageText, user) {
-        if (!this.activeChatId) return alert("Please select a chat channel first.");
-        
-        await addDoc(collection(db, "messages"), {
-            chatId: this.activeChatId,
-            text: messageText,
-            senderId: user.uid,
-            senderName: user.isAnonymous ? "Guest" : (user.displayName || user.email),
-            time: serverTimestamp()
-        });
-    },
-
-    async addMemberToGroup(targetEmail) {
-        if (this.activeChatType !== "group") return;
-        const roomRef = doc(db, "chats", this.activeChatId);
-        await updateDoc(roomRef, {
-            members: arrayUnion(targetEmail)
-        });
-        alert(`User (${targetEmail}) added successfully.`);
-    },
-
-    async deleteCurrentGroup(currentUser) {
-        if (this.activeGroupOwner !== currentUser.email) return alert("Unauthorized access profile.");
-        await deleteDoc(doc(db, "chats", this.activeChatId));
-        document.getElementById("currentChatTitle").innerText = "Select a conversation to start chatting";
-        document.getElementById("groupManageControls").classList.add("hidden");
-        document.getElementById("chatBox").innerHTML = "";
-        if (this.unsubscribeMessages) this.unsubscribeMessages();
-    },
-
-    async postStatus(statusText, currentUser) {
-        await addDoc(collection(db, "statuses"), {
-            text: statusText,
-            ownerEmail: currentUser.email,
-            ownerName: currentUser.displayName || currentUser.email,
-            createdAt: Date.now() 
-        });
-    },
-
-    loadStatuses(currentUser) {
-        const thresholdTime = Date.now() - (72 * 60 * 60 * 1000); 
-        const q = query(collection(db, "statuses"), where("createdAt", ">=", thresholdTime));
-
-        onSnapshot(q, (snap) => {
-            const container = document.getElementById("statusContainer");
-            container.innerHTML = "";
-
-            snap.forEach((docSnap) => {
-                const data = docSnap.data();
-                const div = document.createElement("div");
-                div.className = "status-card";
-                
-                let deleteButtonHTML = '';
-                if (data.ownerEmail === currentUser.email) {
-                    deleteButtonHTML = `<button class="delete-status-btn" data-id="${docSnap.id}">×</button>`;
+// ====== LOAD STATUSES ======
+function loadStatuses() {
+    const now = Date.now();
+    const limit72h = now - (72 * 60 * 60 * 1000);
+    
+    const q = query(collection(db, "statuses"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snapshot) => {
+        const list = document.getElementById('status-list');
+        list.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const status = docSnap.data();
+            if (status.timestamp > limit72h && !isGuest) {
+                const div = document.createElement('div');
+                div.className = 'status-item';
+                div.innerHTML = `<strong>${status.authorName}</strong><p>${status.text}</p>`;
+                if (status.authorId === currentUser.uid) {
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = 'Delete';
+                    delBtn.className = 'small-btn danger-btn';
+                    delBtn.onclick = () => deleteDoc(doc(db, "statuses", docSnap.id));
+                    div.appendChild(delBtn);
                 }
-
-                div.innerHTML = `
-                    <div class="status-header">
-                        <strong>${data.ownerName}</strong>
-                        ${deleteButtonHTML}
-                    </div>
-                    <p class="status-body">${data.text}</p>
-                `;
-                container.appendChild(div);
-            });
-
-            document.querySelectorAll(".delete-status-btn").forEach(btn => {
-                btn.onclick = async (e) => {
-                    const statusId = e.target.getAttribute("data-id");
-                    await deleteDoc(doc(db, "statuses", statusId));
-                };
-            });
+                list.appendChild(div);
+            }
         });
+    });
+}
+
+// ====== CHAT SYSTEM ======
+function getChatId(uid1, uid2) {
+    return uid1 < uid2 ? `chat_${uid1}_${uid2}` : `chat_${uid2}_${uid1}`;
+}
+
+function openChat(type, id, name, creatorId = null) {
+    activeChatType = type;
+    activeChatName = name;
+    activeChatNameLabel.textContent = name;
+    
+    if (type === 'private') {
+        activeChatId = getChatId(currentUser.uid, id);
+        groupActions.classList.add('hidden');
+    } else {
+        activeChatId = id;
+        groupActions.classList.remove('hidden');
+        document.getElementById('btn-manage-group').onclick = () => openManageGroup(id, name, creatorId);
+    }
+
+    if (!isGuest) {
+        inputArea.classList.remove('disabled');
+        msgInput.disabled = false;
+        sendBtn.disabled = false;
+    }
+
+    if (unsubscribeMessages) unsubscribeMessages();
+
+    const messagesRef = collection(db, "messages");
+    const q = query(messagesRef, where("chatId", "==", activeChatId), orderBy("timestamp", "asc"));
+    
+    unsubscribeMessages = onSnapshot(q, (snapshot) => {
+        messagesContainer.innerHTML = '';
+        snapshot.forEach(docSnap => {
+            const msg = docSnap.data();
+            const div = document.createElement('div');
+            div.className = `message ${msg.senderId === currentUser.uid ? 'sent' : 'received'}`;
+            div.innerHTML = `<div class="msg-content">${msg.text}</div><div class="msg-time">${msg.timestamp ? new Date(msg.timestamp.toDate()).toLocaleTimeString() : '...'}</div>`;
+            messagesContainer.appendChild(div);
+        });
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+}
+
+sendBtn.addEventListener('click', sendMessage);
+msgInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+});
+
+async function sendMessage() {
+    if (isGuest || !msgInput.value.trim() || !activeChatId) return;
+    const text = msgInput.value.trim();
+    msgInput.value = '';
+    
+    await addDoc(collection(db, "messages"), {
+        chatId: activeChatId,
+        chatType: activeChatType,
+        senderId: currentUser.uid,
+        text: text,
+        timestamp: serverTimestamp()
+    });
+}
+
+// ====== GROUP MANAGEMENT ======
+const createGroupModal = document.getElementById('create-group-modal');
+document.getElementById('btn-create-group-modal').onclick = () => {
+    if(!isGuest) createGroupModal.classList.remove('hidden');
+};
+document.getElementById('btn-cancel-group').onclick = () => createGroupModal.classList.add('hidden');
+document.getElementById('btn-confirm-group').onclick = async () => {
+    const name = document.getElementById('new-group-name').value;
+    if (name.trim()) {
+        await addDoc(collection(db, "groups"), {
+            name: name,
+            creator: currentUser.uid,
+            members: [currentUser.uid],
+            createdAt: serverTimestamp()
+        });
+        createGroupModal.classList.add('hidden');
+        document.getElementById('new-group-name').value = '';
     }
 };
+
+const manageGroupModal = document.getElementById('manage-group-modal');
+let currentManageGroupId = null;
+
+async function openManageGroup(groupId, groupName, creatorId) {
+    currentManageGroupId = groupId;
+    manageGroupModal.classList.remove('hidden');
+    document.getElementById('manage-group-title').textContent = `Manage: ${groupName}`;
+    
+    const isCreator = currentUser.uid === creatorId;
+    document.getElementById('btn-delete-group').style.display = isCreator ? 'block' : 'none';
+    document.getElementById('btn-add-member').disabled = !isCreator;
+    document.getElementById('add-member-email').disabled = !isCreator;
+
+    const groupDoc = await getDoc(doc(db, "groups", groupId));
+    if (groupDoc.exists()) {
+        const members = groupDoc.data().members;
+        const list = document.getElementById('group-members-list');
+        list.innerHTML = '';
+        
+        for (const uid of members) {
+            const uDoc = await getDoc(doc(db, "users", uid));
+            const li = document.createElement('li');
+            li.textContent = uDoc.exists() ? uDoc.data().name : uid;
+            
+            if (isCreator && uid !== currentUser.uid) {
+                const remBtn = document.createElement('button');
+                remBtn.textContent = 'Remove';
+                remBtn.className = 'small-btn danger-btn';
+                remBtn.onclick = async () => {
+                    await updateDoc(doc(db, "groups", groupId), { members: arrayRemove(uid) });
+                    openManageGroup(groupId, groupName, creatorId);
+                };
+                li.appendChild(remBtn);
+            }
+            list.appendChild(li);
+        }
+    }
+}
+
+document.getElementById('btn-close-manage').onclick = () => manageGroupModal.classList.add('hidden');
+
+document.getElementById('btn-add-member').onclick = async () => {
+    const email = document.getElementById('add-member-email').value.toLowerCase();
+    if (!email) return;
+    const q = query(collection(db, "users"), where("email", "==", email));
+    const snap = await getDocs(q); // Need to import getDocs but using workaround for modularity:
+    onSnapshot(q, async (snapshot) => {
+        if(!snapshot.empty) {
+            const userToAdd = snapshot.docs[0].id;
+            await updateDoc(doc(db, "groups", currentManageGroupId), { members: arrayUnion(userToAdd) });
+            document.getElementById('add-member-email').value = '';
+            manageGroupModal.classList.add('hidden'); // Refresh handled by reopen
+        } else {
+            alert("User not found");
+        }
+    });
+};
+
+document.getElementById('btn-delete-group').onclick = async () => {
+    if (confirm("Are you sure?")) {
+        await deleteDoc(doc(db, "groups", currentManageGroupId));
+        manageGroupModal.classList.add('hidden');
+        messagesContainer.innerHTML = '';
+        activeChatNameLabel.textContent = 'Select a chat';
+        inputArea.classList.add('disabled');
+        msgInput.disabled = true;
+        sendBtn.disabled = true;
+    }
+};
+
+// ====== STATUS MANAGEMENT ======
+const addStatusModal = document.getElementById('add-status-modal');
+document.getElementById('btn-add-status-modal').onclick = () => {
+    if(!isGuest) addStatusModal.classList.remove('hidden');
+};
+document.getElementById('btn-cancel-status').onclick = () => addStatusModal.classList.add('hidden');
+document.getElementById('btn-confirm-status').onclick = async () => {
+    const text = document.getElementById('new-status-text').value;
+    if (text.trim()) {
+        await addDoc(collection(db, "statuses"), {
+            text: text,
+            authorId: currentUser.uid,
+            authorName: currentUserNameLabel.textContent,
+            timestamp: Date.now()
+        });
+        addStatusModal.classList.add('hidden');
+        document.getElementById('new-status-text').value = '';
+    }
+};
+
+function setupUI() {
+    if (isGuest) {
+        document.getElementById('btn-create-group-modal').style.display = 'none';
+        document.getElementById('btn-add-status-modal').style.display = 'none';
+    }
+}
