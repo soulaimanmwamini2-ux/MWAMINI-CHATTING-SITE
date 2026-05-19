@@ -1,17 +1,19 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-    getAuth, 
-    createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword, 
-    onAuthStateChanged, 
-    signOut, 
-    updateProfile 
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut,
+    updateProfile,
+    sendEmailVerification,
+    signInAnonymously
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-// ===================================================
-// ====== PASTE YOUR FIREBASE CONFIGURATION HERE ======
-// ===================================================
+// ==========================================
+// PASTE YOUR FIREBASE CONFIGURATION HERE:
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
   authDomain: "mwamini-chatting-site-38894.firebaseapp.com",
@@ -22,30 +24,43 @@ const firebaseConfig = {
   appId: "1:522276815664:web:debb043876b07cca913ef5",
   measurementId: "G-FKFP0J8J94"
 };
-// ===================================================
 
+// Initialize Firebase Core Engine
 const app = initializeApp(firebaseConfig);
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
+// ==========================================
+// AUTHENTICATION METHODS
+// ==========================================
 export const Auth = {
-    login(email, pass) {
-        return signInWithEmailAndPassword(auth, email, pass)
-            .then(() => location.href = "dashboard.html")
-            .catch(err => alert("Login Error: " + err.message));
+    async login(email, pass) {
+        const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+        if (!userCredential.user.emailVerified) {
+            await signOut(auth);
+            throw new Error("Email verification required. Please verify your email first.");
+        }
+        location.href = "dashboard.html";
+        return userCredential.user;
     },
 
-    register(email, pass, name) {
-        return createUserWithEmailAndPassword(auth, email, pass)
-            .then(async (userCred) => {
-                await updateProfile(userCred.user, { displayName: name });
-                location.href = "dashboard.html";
-            })
-            .catch(err => alert("Registration Error: " + err.message));
+    async register(email, pass, name) {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+        await updateProfile(userCredential.user, { displayName: name });
+        await sendEmailVerification(userCredential.user);
+        await signOut(auth); // Sign out immediately until they verify their email
+        return true;
+    },
+
+    async loginAsGuest() {
+        return signInAnonymously(auth);
     },
 
     logout() {
-        return signOut(auth).then(() => location.href = "index.html");
+        return signOut(auth).then(() => {
+            location.href = "index.html";
+        });
     },
 
     onAuth(callback) {
