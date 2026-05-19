@@ -2,153 +2,47 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Mwamini Dashboard</title>
+    <title>Dashboard</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="dash-body">
-
-<nav class="topbar">
-    <div class="brand">MWAMINI CHAT</div>
-    <div class="user-profile">
-        <span id="userDisplay">Loading...</span>
-        <span id="roleBadge" class="badge"></span>
+    <div class="layout">
+        <main class="center">
+            <div id="chatBox" style="height: 400px; border: 1px solid #ccc; overflow-y: scroll;"></div>
+            <input id="msgInput" placeholder="Message...">
+            <button id="sendBtn">Send</button>
+        </main>
+        <aside class="right">
+            <h3>Status</h3>
+            <div id="statusContainer"></div>
+        </aside>
     </div>
-    <button id="logoutBtn">Logout</button>
-</nav>
 
-<div class="layout">
-    <aside class="left">
-        <div class="section-header">
-            <h3>Conversations</h3>
-            <button id="toggleCreateGroupBtn" class="action-btn">+ New Group</button>
-        </div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-        <div id="groupCreateBox" class="panel-box hidden">
-            <input type="text" id="newGroupNameInput" placeholder="Group Name...">
-            <button id="submitCreateGroupBtn">Create</button>
-        </div>
+        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        <div class="search-box">
-            <input type="email" id="searchUserEmail" placeholder="Find user by exact email...">
-            <button id="searchUserBtn">Chat</button>
-        </div>
+        // Send Message
+        document.getElementById('sendBtn').onclick = async () => {
+            const input = document.getElementById('msgInput');
+            await addDoc(collection(db, "messages"), { text: input.value, time: serverTimestamp() });
+            input.value = "";
+        };
 
-        <div class="list-container">
-            <h4>Groups & Active Chats</h4>
-            <div id="groupList"></div>
-        </div>
-    </aside>
-
-    <main class="center">
-        <div class="chat-header">
-            <span id="currentChatTitle">Select a conversation to start chatting</span>
-            <div id="groupManageControls" class="hidden">
-                <input type="email" id="addMemberEmail" placeholder="Member email...">
-                <button id="addMemberBtn">Add User</button>
-                <button id="deleteGroupBtn" class="btn-danger">Delete Group</button>
-            </div>
-        </div>
-
-        <div id="chatBox"></div>
-
-        <form id="msgForm">
-            <input id="msgInput" placeholder="Type a message..." required autocomplete="off" />
-            <button type="submit">Send</button>
-        </form>
-    </main>
-
-    <aside class="right">
-        <div class="section-header">
-            <h3>Status Updates</h3>
-        </div>
-        
-        <div id="statusActionBox">
-            <input type="text" id="statusTextInput" placeholder="What's on your mind?">
-            <button id="postStatusBtn">Post Status</button>
-        </div>
-        <p class="small-text">Updates auto-delete after 72 hours.</p>
-
-        <div id="statusContainer" class="status-feed"></div>
-    </aside>
-</div>
-
-<script type="module">
-    import { Auth } from './js/auth.js';
-    import { App } from './js/app.js';
-
-    let currentUser = null;
-
-    Auth.onAuth((user) => {
-        if (!user) {
-            location.href = "index.html";
-            return;
-        }
-        
-        if (!user.isAnonymous && !user.emailVerified) {
-            location.href = "index.html";
-            return;
-        }
-
-        currentUser = user;
-        document.getElementById("userDisplay").innerText = user.isAnonymous ? "Guest Session" : (user.displayName || user.email);
-        document.getElementById("roleBadge").innerText = user.isAnonymous ? "Guest" : "Verified User";
-        
-        if (user.isAnonymous) {
-            document.getElementById("statusActionBox").classList.add("hidden");
-            document.getElementById("toggleCreateGroupBtn").classList.add("hidden");
-        }
-
-        App.init(user);
-    });
-
-    document.getElementById("logoutBtn").onclick = () => Auth.logout();
-
-    document.getElementById("msgForm").onsubmit = (e) => {
-        e.preventDefault();
-        const input = document.getElementById("msgInput");
-        if (!input.value.trim()) return;
-        App.sendMessage(input.value.trim(), currentUser);
-        input.value = "";
-    };
-
-    document.getElementById("toggleCreateGroupBtn").onclick = () => {
-        document.getElementById("groupCreateBox").classList.toggle("hidden");
-    };
-
-    document.getElementById("submitCreateGroupBtn").onclick = () => {
-        const nameInput = document.getElementById("newGroupNameInput");
-        if (!nameInput.value.trim()) return;
-        App.createGroup(nameInput.value.trim(), currentUser);
-        nameInput.value = "";
-        document.getElementById("groupCreateBox").classList.add("hidden");
-    };
-
-    document.getElementById("searchUserBtn").onclick = () => {
-        const emailInput = document.getElementById("searchUserEmail");
-        if (!emailInput.value.trim()) return;
-        App.startPrivateChat(emailInput.value.trim(), currentUser);
-        emailInput.value = "";
-    };
-
-    document.getElementById("addMemberBtn").onclick = () => {
-        const emailInput = document.getElementById("addMemberEmail");
-        if (!emailInput.value.trim()) return;
-        App.addMemberToGroup(emailInput.value.trim());
-        emailInput.value = "";
-    };
-
-    document.getElementById("deleteGroupBtn").onclick = () => {
-        if (confirm("Are you sure you want to delete this group?")) {
-            App.deleteCurrentGroup(currentUser);
-        }
-    };
-
-    document.getElementById("postStatusBtn").onclick = () => {
-        const statusInput = document.getElementById("statusTextInput");
-        if (!statusInput.value.trim()) return;
-        App.postStatus(statusInput.value.trim(), currentUser);
-        statusInput.value = "";
-    };
-</script>
+        // Display Messages
+        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc")), (snap) => {
+            const box = document.getElementById('chatBox');
+            box.innerHTML = "";
+            snap.forEach(doc => {
+                box.innerHTML += `<div>${doc.data().text}</div>`;
+            });
+        });
+    </script>
 </body>
 </html>
