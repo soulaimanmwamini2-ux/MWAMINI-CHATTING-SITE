@@ -1,48 +1,110 @@
+<!-- dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MWAMINI CHAT WEB</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="dash-body">
-    <div class="layout">
-        <main class="center">
-            <div id="chatBox" style="height: 400px; border: 1px solid #ccc; overflow-y: scroll;"></div>
-            <input id="msgInput" placeholder="Message...">
-            <button id="sendBtn">Send</button>
-        </main>
-        <aside class="right">
-            <h3>Status</h3>
-            <div id="statusContainer"></div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2 id="current-user-name">Loading...</h2>
+                <button id="logout-btn">Logout</button>
+            </div>
+            
+            <div class="sidebar-tabs">
+                <button id="tab-chats" class="active">Chats</button>
+                <button id="tab-groups">Groups</button>
+                <button id="tab-status">Status</button>
+            </div>
+
+            <div id="panel-chats" class="sidebar-panel">
+                <h3>Contacts</h3>
+                <div id="contacts-list" class="list-container"></div>
+            </div>
+
+            <div id="panel-groups" class="sidebar-panel hidden">
+                <div class="panel-header">
+                    <h3>Groups</h3>
+                    <button id="btn-create-group-modal" class="small-btn">+</button>
+                </div>
+                <div id="groups-list" class="list-container"></div>
+            </div>
+
+            <div id="panel-status" class="sidebar-panel hidden">
+                <div class="panel-header">
+                    <h3>Recent Status</h3>
+                    <button id="btn-add-status-modal" class="small-btn">+</button>
+                </div>
+                <div id="status-list" class="list-container"></div>
+            </div>
         </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-area">
+            <div id="chat-header" class="chat-header">
+                <h3 id="active-chat-name">Select a chat</h3>
+                <div id="group-actions" class="hidden">
+                    <button id="btn-manage-group" class="small-btn">Manage</button>
+                </div>
+            </div>
+            
+            <div id="messages-container" class="messages-container"></div>
+            
+            <div id="chat-input-area" class="chat-input-area disabled">
+                <input type="text" id="message-input" placeholder="Type a message..." disabled>
+                <button id="send-btn" disabled>Send</button>
+            </div>
+            <div id="guest-warning" class="hidden notice">Guest mode: Read-only access.</div>
+        </main>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    <!-- Modals -->
+    <div id="create-group-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Create Group</h3>
+            <input type="text" id="new-group-name" placeholder="Group Name">
+            <div class="modal-actions">
+                <button id="btn-cancel-group">Cancel</button>
+                <button id="btn-confirm-group">Create</button>
+            </div>
+        </div>
+    </div>
 
-        const firebaseConfig = { /* PASTE YOUR CONFIG HERE */ };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+    <div id="manage-group-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="manage-group-title">Manage Group</h3>
+            <div class="manage-section">
+                <h4>Add Member (Email)</h4>
+                <input type="email" id="add-member-email" placeholder="User Email">
+                <button id="btn-add-member" class="small-btn">Add</button>
+            </div>
+            <div class="manage-section">
+                <h4>Members</h4>
+                <ul id="group-members-list"></ul>
+            </div>
+            <div class="modal-actions space-between">
+                <button id="btn-delete-group" class="danger-btn">Delete Group</button>
+                <button id="btn-close-manage">Close</button>
+            </div>
+        </div>
+    </div>
 
-        // Send Message
-        document.getElementById('sendBtn').onclick = async () => {
-            const input = document.getElementById('msgInput');
-            await addDoc(collection(db, "messages"), { text: input.value, time: serverTimestamp() });
-            input.value = "";
-        };
+    <div id="add-status-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Post Status</h3>
+            <textarea id="new-status-text" placeholder="What's on your mind? (Text or link)"></textarea>
+            <div class="modal-actions">
+                <button id="btn-cancel-status">Cancel</button>
+                <button id="btn-confirm-status">Post</button>
+            </div>
+        </div>
+    </div>
 
-        // Display Messages
-        onSnapshot(query(collection(db, "messages"), orderBy("time", "asc")), (snap) => {
-            const box = document.getElementById('chatBox');
-            box.innerHTML = "";
-            snap.forEach(doc => {
-                box.innerHTML += `<div>${doc.data().text}</div>`;
-            });
-        });
-    </script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
