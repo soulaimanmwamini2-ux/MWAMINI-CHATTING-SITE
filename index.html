@@ -10,30 +10,41 @@
 <body class="auth-body">
     <div class="auth-container">
         <h1>MWAMINI CHAT WEB</h1>
-        <div id="alert-box" class="hidden"></div>
         
-        <div class="tabs">
-            <button id="tab-login" class="active">Login</button>
-            <button id="tab-register">Register</button>
+        <!-- Warning for users opening directly via file:// -->
+        <div id="file-warning" class="alert error hidden">
+            Error: You must run this app on a local web server (like Vercel, or VS Code Live Server). Firebase modules will not load when opened directly via file://
         </div>
 
+        <div id="alert-box" class="hidden"></div>
+
         <form id="login-form" class="auth-form">
-            <input type="email" id="login-email" placeholder="Email" required>
+            <h2>Login</h2>
+            <input type="email" id="login-email" placeholder="Email Address" required>
             <input type="password" id="login-password" placeholder="Password" required>
-            <button type="submit">Login</button>
+            <button type="submit" id="login-btn">Login</button>
+            <button type="button" id="show-register" class="secondary-btn">Create an Account</button>
         </form>
 
         <form id="register-form" class="auth-form hidden">
+            <h2>Register</h2>
             <input type="text" id="reg-name" placeholder="Display Name" required>
-            <input type="email" id="reg-email" placeholder="Email" required>
+            <input type="email" id="reg-email" placeholder="Email Address" required>
             <input type="password" id="reg-password" placeholder="Password" required>
-            <button type="submit">Register</button>
+            <button type="submit" id="register-btn">Register</button>
+            <button type="button" id="show-login" class="secondary-btn">Back to Login</button>
         </form>
 
         <div class="guest-section">
-            <button id="guest-login-btn" class="secondary-btn">Continue as Guest</button>
+            <button id="guest-login-btn" class="secondary-btn" style="border-color: #aaa; color: #aaa;">Continue as Guest</button>
         </div>
     </div>
+
+    <script>
+        if (window.location.protocol === 'file:') {
+            document.getElementById('file-warning').classList.remove('hidden');
+        }
+    </script>
     <script type="module" src="auth.js"></script>
 </body>
 </html>
