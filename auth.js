@@ -3,7 +3,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/fireba
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
 import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-firestore.js";
 
-// ====== FIREBASE CONFIGURATION ======
+// ====== 1. INSERT FIREBASE CONFIG HERE ======
 const firebaseConfig = {
   apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
   authDomain: "mwamini-chatting-site-38894.firebaseapp.com",
@@ -20,27 +20,23 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ====== UI ELEMENTS ======
-const loginTab = document.getElementById('tab-login');
-const registerTab = document.getElementById('tab-register');
 const loginForm = document.getElementById('login-form');
 const registerForm = document.getElementById('register-form');
+const showRegisterBtn = document.getElementById('show-register');
+const showLoginBtn = document.getElementById('show-login');
 const alertBox = document.getElementById('alert-box');
 const guestLoginBtn = document.getElementById('guest-login-btn');
 
 // ====== EVENT LISTENERS ======
-if(loginTab && registerTab) {
-    loginTab.addEventListener('click', () => {
-        loginTab.classList.add('active');
-        registerTab.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
+if (showRegisterBtn && showLoginBtn) {
+    showRegisterBtn.addEventListener('click', () => {
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
     });
 
-    registerTab.addEventListener('click', () => {
-        registerTab.classList.add('active');
-        loginTab.classList.remove('active');
-        registerForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
+    showLoginBtn.addEventListener('click', () => {
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
     });
 }
 
@@ -51,7 +47,7 @@ const showAlert = (msg, isError = true) => {
     setTimeout(() => alertBox.classList.add('hidden'), 5000);
 };
 
-if(registerForm) {
+if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('reg-name').value;
@@ -68,13 +64,15 @@ if(registerForm) {
             });
             showAlert("Registration successful! Please verify your email before logging in.", false);
             auth.signOut();
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
         } catch (error) {
             showAlert(error.message);
         }
     });
 }
 
-if(loginForm) {
+if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('login-email').value;
@@ -95,7 +93,7 @@ if(loginForm) {
     });
 }
 
-if(guestLoginBtn) {
+if (guestLoginBtn) {
     guestLoginBtn.addEventListener('click', async () => {
         try {
             await signInAnonymously(auth);
@@ -110,7 +108,7 @@ if(guestLoginBtn) {
 onAuthStateChanged(auth, (user) => {
     const isDashboard = window.location.pathname.includes('dashboard.html');
     if (user && !isDashboard) {
-        if(user.isAnonymous || user.emailVerified) {
+        if (user.isAnonymous || user.emailVerified) {
             window.location.href = 'dashboard.html';
         }
     }
