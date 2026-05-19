@@ -1,22 +1,166 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Dashboard</title><link rel="stylesheet" href="style.css"></head>
+<head>
+    <meta charset="UTF-8">
+    <title>Mwamini Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body class="dash-body">
+
+<nav class="topbar">
+    <div class="brand">MWAMINI CHAT</div>
+    <div class="user-profile">
+        <span id="userDisplay">Loading...</span>
+        <span id="roleBadge" class="badge"></span>
+    </div>
+    <button id="logoutBtn">Logout</button>
+</nav>
+
 <div class="layout">
+    <!-- LEFT PANEL: NAVIGATION, GROUPS & DM CREATION -->
     <aside class="left">
-        <div id="groupList"></div>
-        <button onclick="App.createGroup(prompt('Enter Name:'))">+ New Group</button>
-        <input id="inviteEmail" placeholder="Member Email">
-        <button onclick="App.addMember(window.activeGroupId, document.getElementById('inviteEmail').value)">Invite</button>
+        <div class="section-header">
+            <h3>Conversations</h3>
+            <button id="toggleCreateGroupBtn" class="action-btn">+ New Group</button>
+        </div>
+
+        <!-- Hidden Group Creation Modal Box -->
+        <div id="groupCreateBox" class="panel-box hidden">
+            <input type="text" id="newGroupNameInput" placeholder="Group Name...">
+            <button id="submitCreateGroupBtn">Create</button>
+        </div>
+
+        <div class="search-box">
+            <input type="email" id="searchUserEmail" placeholder="Find user by exact email...">
+            <button id="searchUserBtn">Chat</button>
+        </div>
+
+        <div class="list-container">
+            <h4>Groups & Active Chats</h4>
+            <div id="groupList"></div>
+        </div>
     </aside>
+
+    <!-- CENTER PANEL: LIVE CHAT AREA -->
     <main class="center">
+        <div class="chat-header">
+            <span id="currentChatTitle">Select a conversation to start chatting</span>
+            <div id="groupManageControls" class="hidden">
+                <input type="email" id="addMemberEmail" placeholder="Member email...">
+                <button id="addMemberBtn">Add User</button>
+                <button id="deleteGroupBtn" class="btn-danger">Delete Group</button>
+            </div>
+        </div>
+
         <div id="chatBox"></div>
-        <form id="msgForm"><input id="msgInput"><button type="submit">Send</button></form>
+
+        <form id="msgForm">
+            <input id="msgInput" placeholder="Type an encrypted message..." required autocomplete="off" />
+            <button type="submit">Send</button>
+        </form>
     </main>
+
+    <!-- RIGHT PANEL: 72-HOUR DISAPPEARING STATUSES -->
+    <aside class="right">
+        <div class="section-header">
+            <h3>Status Updates</h3>
+        </div>
+        
+        <div id="statusActionBox">
+            <input type="text" id="statusTextInput" placeholder="What's on your mind?">
+            <button id="postStatusBtn">Post Status</button>
+        </div>
+        <p class="small-text">Updates auto-delete after 72 hours.</p>
+
+        <div id="statusContainer" class="status-feed"></div>
+    </aside>
 </div>
+
 <script type="module">
-    import { App } from './app.js';
-    App.init();
+    import { Auth } from './js/auth.js';
+    import { App } from './js/app.js';
+
+    let currentUser = null;
+
+    Auth.onAuth((user) => {
+        if (!user) {
+            location.href = "index.html";
+            return;
+        }
+        
+        // Ensure unverified non-guests cannot stay here
+        if (!user.isAnonymous && !user.emailVerified) {
+            location.href = "index.html";
+            return;
+        }
+
+        currentUser = user;
+        document.getElementById("userDisplay").innerText = user.isAnonymous ? "Guest Session" : (user.displayName || user.email);
+        document.getElementById("roleBadge").innerText = user.isAnonymous ? "Guest" : "Verified User";
+        
+        if (user.isAnonymous) {
+            document.getElementById("statusActionBox").classList.add("hidden");
+            document.getElementById("toggleCreateGroupBtn").classList.add("hidden");
+        }
+
+        // Initialize core application listeners
+        App.init(user);
+    });
+
+    document.getElementById("logoutBtn").onclick = () => Auth.logout();
+
+    // Message Submissions
+    document.getElementById("msgForm").onsubmit = (e) => {
+        e.preventDefault();
+        const input = document.getElementById("msgInput");
+        if (!input.value.trim()) return;
+        App.sendMessage(input.value.trim(), currentUser);
+        input.value = "";
+    };
+
+    // Group UI Controls
+    document.getElementById("toggleCreateGroupBtn").onclick = () => {
+        document.getElementById("groupCreateBox").classList.toggle("hidden");
+    };
+
+    document.getElementById("submitCreateGroupBtn").onclick = () => {
+        const nameInput = document.getElementById("newGroupNameInput");
+        if (!nameInput.value.trim()) return;
+        App.createGroup(nameInput.value.trim(), currentUser);
+        nameInput.value = "";
+        document.getElementById("groupCreateBox").classList.add("hidden");
+    };
+
+    // User DM target lookups
+    document.getElementById("searchUserBtn").onclick = () => {
+        const emailInput = document.getElementById("searchUserEmail");
+        if (!emailInput.value.trim()) return;
+        App.startPrivateChat(emailInput.value.trim(), currentUser);
+        emailInput.value = "";
+    };
+
+    // Group Management Actions
+    document.getElementById("addMemberBtn").onclick = () => {
+        const emailInput = document.getElementById("addMemberEmail");
+        if (!emailInput.value.trim()) return;
+        App.addMemberToGroup(emailInput.value.trim());
+        emailInput.value = "";
+    };
+
+    document.getElementById("deleteGroupBtn").onclick = () => {
+        if (confirm("Are you sure you want to delete this group? This action cannot be undone.")) {
+            App.deleteCurrentGroup(currentUser);
+        }
+    };
+
+    // Status Actions
+    document.getElementById("postStatusBtn").onclick = () => {
+        const statusInput = document.getElementById("statusTextInput");
+        if (!statusInput.value.trim()) return;
+        App.postStatus(statusInput.value.trim(), currentUser);
+        statusInput.value = "";
+    };
 </script>
+
 </body>
 </html>
