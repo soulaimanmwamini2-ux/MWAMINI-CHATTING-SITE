@@ -1,19 +1,17 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-
-import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    updateProfile,
-    onAuthStateChanged,
-    signOut
+import { 
+    getAuth, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    onAuthStateChanged, 
+    signOut, 
+    updateProfile 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-/* =========================================
-   FIREBASE CONFIG
-   REPLACE WITH YOUR REAL FIREBASE KEYS
-========================================= */
-
+// ===================================================
+// ====== PASTE YOUR FIREBASE CONFIGURATION HERE ======
+// ===================================================
 const firebaseConfig = {
   apiKey: "AIzaSyBiglIl9cO6Tf5p-cRB9kDZqpV2i4wliug",
   authDomain: "mwamini-chatting-site-38894.firebaseapp.com",
@@ -24,106 +22,33 @@ const firebaseConfig = {
   appId: "1:522276815664:web:debb043876b07cca913ef5",
   measurementId: "G-FKFP0J8J94"
 };
-
-/* =========================================
-   INITIALIZE FIREBASE
-========================================= */
+// ===================================================
 
 const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-const auth = getAuth(app);
-
-/* =========================================
-   AUTH ENGINE
-========================================= */
-
-export const AuthEngine = {
-
-    /* REGISTER */
-
-    async register(email, password, username) {
-
-        try {
-
-            const userCredential =
-                await createUserWithEmailAndPassword(
-                    auth,
-                    email,
-                    password
-                );
-
-            await updateProfile(userCredential.user, {
-                displayName: username
-            });
-
-            alert("Registration successful");
-
-            window.location.href = "dashboard.html";
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(error.message);
-
-        }
-
+export const Auth = {
+    login(email, pass) {
+        return signInWithEmailAndPassword(auth, email, pass)
+            .then(() => location.href = "dashboard.html")
+            .catch(err => alert("Login Error: " + err.message));
     },
 
-    /* LOGIN */
-
-    async login(email, password) {
-
-        try {
-
-            await signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-
-            alert("Login successful");
-
-            window.location.href = "dashboard.html";
-
-        } catch (error) {
-
-            console.error(error);
-
-            alert(error.message);
-
-        }
-
+    register(email, pass, name) {
+        return createUserWithEmailAndPassword(auth, email, pass)
+            .then(async (userCred) => {
+                await updateProfile(userCred.user, { displayName: name });
+                location.href = "dashboard.html";
+            })
+            .catch(err => alert("Registration Error: " + err.message));
     },
 
-    /* MONITOR AUTH STATE */
-
-    monitorState(callback) {
-
-        onAuthStateChanged(auth, (user) => {
-
-            callback(user);
-
-        });
-
+    logout() {
+        return signOut(auth).then(() => location.href = "index.html");
     },
 
-    /* LOGOUT */
-
-    async logout() {
-
-        try {
-
-            await signOut(auth);
-
-            window.location.href = "index.html";
-
-        } catch (error) {
-
-            console.error(error);
-
-        }
-
+    onAuth(callback) {
+        onAuthStateChanged(auth, callback);
     }
-
 };
