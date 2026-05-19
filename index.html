@@ -1,78 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MWAMINI CHAT</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-</head>
-<body class="cover-body">
-
+<head><meta charset="UTF-8"><title>MWAMINI SIGNUP</title><link rel="stylesheet" href="style.css"></head>
+<body>
 <div class="auth-wrapper">
-    <div class="auth-branding">
-        <div class="brand-logo">🔒</div>
-        <h1>HIGH PRIVACY<br>ENCRYPTED CHAT</h1>
-        <p>Secure communication system built for absolute control and privacy.</p>
-    </div>
-
-    <div class="auth-panel">
-        <div class="tabs">
-            <button id="showLogin" class="active">Login</button>
-            <button id="showSignup">Signup</button>
-        </div>
-
-        <form id="loginForm">
-            <input type="email" id="loginEmail" placeholder="Email" required>
-            <input type="password" id="loginPassword" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-
-        <form id="signupForm" class="hidden">
-            <input type="text" id="signupName" placeholder="Username" required>
-            <input type="email" id="signupEmail" placeholder="Email" required>
-            <input type="password" id="signupPassword" placeholder="Password" required>
-            <button type="submit">Create Account</button>
-        </form>
-    </div>
+    <form id="signupForm">
+        <input type="text" id="name" placeholder="Username" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <input type="password" id="pass" placeholder="Password" required>
+        <button type="submit">Initialize Account</button>
+    </form>
 </div>
-
 <script type="module">
-    import { Auth } from './js/auth.js';
-
-    const loginForm = document.getElementById("loginForm");
-    const signupForm = document.getElementById("signupForm");
-    const showLoginBtn = document.getElementById("showLogin");
-    const showSignupBtn = document.getElementById("showSignup");
-
-    showLoginBtn.onclick = () => {
-        loginForm.classList.remove("hidden");
-        signupForm.classList.add("hidden");
-        showLoginBtn.classList.add("active");
-        showSignupBtn.classList.remove("active");
-    };
-
-    showSignupBtn.onclick = () => {
-        signupForm.classList.remove("hidden");
-        loginForm.classList.add("hidden");
-        showSignupBtn.classList.add("active");
-        showLoginBtn.classList.remove("active");
-    };
-
-    loginForm.onsubmit = e => {
+    import { Auth } from './auth.js';
+    document.getElementById("signupForm").onsubmit = e => {
         e.preventDefault();
-        Auth.login(document.getElementById("loginEmail").value, document.getElementById("loginPassword").value);
-    };
-
-    signupForm.onsubmit = e => {
-        e.preventDefault();
-        Auth.register(
-            document.getElementById("signupEmail").value, 
-            document.getElementById("signupPassword").value, 
-            document.getElementById("signupName").value
-        );
+        Auth.register(document.getElementById("email").value, document.getElementById("pass").value, document.getElementById("name").value);
     };
 </script>
-
 </body>
 </html>
